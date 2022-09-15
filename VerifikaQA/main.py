@@ -274,9 +274,9 @@ def close_verifika():
 
             answer = askyesno(
                 title="Verifika is already running",
-                message=("""Another instance of Verifika is already running.\n
-                Would you like to close it before continuing?\n
-                Warning: no changes will be saved."""),
+                message=("Another instance of Verifika is already running.\n"
+                "Would you like to close it before continuing?\n"
+                "Warning: no changes will be saved."),
                 icon="question")
 
             # closes this program if user selects "no" (or closes the window)
