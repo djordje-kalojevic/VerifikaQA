@@ -405,10 +405,10 @@ def process_and_save_report(temp_report_name: str, sheets_to_keep: list[str]):
         sheet = wb_verifika[sheet_name]
         # removes sheets that are just Verifika sheet headers
         if sheet.max_row < 12:
-            wb_verifika.remove_sheet(sheet)
+            wb_verifika.remove(sheet)
         # for 'Full' reports only sheets without any errors will be removes
         elif "Full" not in sheets_to_keep and sheet_name not in sheets_to_keep:
-            wb_verifika.remove_sheet(sheet)
+            wb_verifika.remove(sheet)
 
     if len(wb_verifika.sheetnames) > 0:
         report_saved = False
