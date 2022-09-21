@@ -5,8 +5,7 @@ In turn, this speeds up the process."""
 from os import mkdir, remove, system
 from os.path import isfile, isdir, split
 from shutil import rmtree, copy
-from tkinter import (Tk, Toplevel, Button, Checkbutton, StringVar, BooleanVar,
-                     Label, TclError)
+from tkinter import PhotoImage, Tk, Toplevel, Button, Checkbutton, StringVar, BooleanVar, Label
 from tkinter.messagebox import showinfo, showerror, askyesno
 from tkinter.filedialog import askopenfilename, askopenfilenames, asksaveasfilename
 from tkinter.ttk import Radiobutton
@@ -18,9 +17,8 @@ from openpyxl import load_workbook
 from PIL import Image
 from alive_progress import alive_bar
 
-
-def create_program_mainloop(transparent_icon_location: str) -> Tk:
-    """Creates an instance of tk.Tk and replaces its icon with a transparent one."""
+def create_program_mainloop(transparent_icon_location = 'icon.ico') -> Tk:
+    """Creates an instance of tk.Tk class and replaces its icon with a transparent one."""
 
     if not isfile(transparent_icon_location):
         transparent_icon = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
@@ -37,7 +35,7 @@ def create_program_mainloop(transparent_icon_location: str) -> Tk:
 
 class ConfigFile(ConfigParser):
     """Custom ConfigParser class that stores its own path.
-    this allows it to be read without needing to pass its path to the function.
+    This allows it to be read without needing to pass its path to the function.
     Use: ConfigFile.read(ConfigFile.path)"""
 
     def __init__(self, path):
@@ -46,7 +44,7 @@ class ConfigFile(ConfigParser):
         self.read(self.path)
 
 
-def create_config(config_location: str) -> ConfigFile:
+def create_config(config_location = 'config.ini') -> ConfigFile:
     """Creates a simple config file which will keep the following:
     verifika__location: location of the Verifika executable,
     verifika_profiles_location: location of a directory containing Verifika profiles"""
@@ -61,8 +59,7 @@ def create_config(config_location: str) -> ConfigFile:
     return config_file
 
 
-def update_config(config_file: ConfigFile, section: str, option: str,
-                  value: str):
+def update_config(config_file: ConfigFile, section: str, option: str, value: str):
     """General update function which can be used for future features."""
 
     config_file.set(section, option, value)
@@ -70,34 +67,74 @@ def update_config(config_file: ConfigFile, section: str, option: str,
         config_file.write(file)
 
 
-def select_report_type(root: Tk) -> list[str]:
+class ToggleButton(Button):
+    """"Button class that changes its image based on whether it is on or off.
+    Additionally it can return its current state (on or off)."""
+
+    def __init__(self, master):
+        self.on_image = PhotoImage(file="enabled.png")
+        self.off_image = PhotoImage(file="disabled.png")
+        self.report_optimization = True
+
+        Button.__init__(self, master, image=self.on_image, bd=0)
+        self.master = master
+        self['command'] = self.toggle
+
+    def toggle(self):
+        """Allows the button to be toggled on and off"""
+
+        if not self.report_optimization:
+            self.config(image=self.on_image)
+            self.report_optimization = True
+
+        else:
+            self.config(image=self.off_image)
+            self.report_optimization = False
+
+    def check_state(self) -> bool:
+        """Returns the state of the toggle button, i.e., enabled or disabled."""
+
+        return self.report_optimization
+
+
+def select_report_type(root: Tk) -> tuple[list[str], bool]:
     """Displays radiobuttons which allow the user to choose which type of report they need.
-    Furthermore allows the creation of custom reports via checkboxes."""
+    Furthermore allows the creation of custom reports via checkboxes.
+    Returns which types of errors user would like to keep as well as
+    wether they want to optimize the report manually."""
+
+    radiobutton_popup = Toplevel(root)
+    radiobutton_popup.attributes("-topmost", "true")
+    radiobutton_popup.geometry("225x275")
+
+    label = Label(radiobutton_popup,
+                  text="\nPlease choose desired report type:\n")
+    label.grid(columnspan=3, column=0, row=0, ipadx=20)
+
+    toggle_button_label = Label(radiobutton_popup, text='Unoptimized report')
+    toggle_button_label.grid(columnspan=2, column=0, row=1, ipady=10, ipadx=20)
+
+    toggle_button = ToggleButton(radiobutton_popup)
+    toggle_button.grid(column=2, row=1, ipady=0)
+
+    str_var = StringVar(radiobutton_popup, "1")
 
     # dictionary containing labels and return values for radiobuttons
     radiobutton_dictionary = {
         "Full Report": "Full",
         "Consistency Report": "Consistency Errors",
         "Spelling + Grammar Report": "Spelling + Grammar",
-        "Custom Report": "Custom"
-    }
-
-    radiobutton_popup = Toplevel(root)
-    radiobutton_popup.attributes("-topmost", "true")
-    radiobutton_popup.geometry("200x220")
-    label = Label(radiobutton_popup,
-                  text="\nPlease choose desired report type:\n")
-    label.pack()
-
-    str_var = StringVar(radiobutton_popup, "1")
+        "Custom Report": "Custom"}
 
     # iterating over labels and adding buttons to the window
+    row_number = 2
     for (text, value) in radiobutton_dictionary.items():
         radiobutton = Radiobutton(radiobutton_popup,
                                   text=text,
                                   variable=str_var,
                                   value=value)
-        radiobutton.pack(side="top", ipady=10)
+        radiobutton.grid(columnspan=3, column = 0, row=row_number, ipady=10)
+        row_number += 1
 
     # waits for the user input
     radiobutton_popup.wait_variable(str_var)
@@ -109,6 +146,7 @@ def select_report_type(root: Tk) -> list[str]:
     if choice == "Custom":
         sheets_to_keep = checkbuttons_window(root)
 
+    #custom spellcheck QA check
     elif choice == "Spelling + Grammar":
         sheets_to_keep.extend(
             ["Spelling Errors", "Grammar Errors", "User-defined Errors"])
@@ -116,13 +154,13 @@ def select_report_type(root: Tk) -> list[str]:
     else:
         sheets_to_keep.append(choice)
 
-    # closes window if it's not closed already by the user
-    try:
+    #closes the window if it remained open
+    if radiobutton_popup.state() == 'normal':
         radiobutton_popup.destroy()
-    except TclError:
-        pass
 
-    return sheets_to_keep
+    report_optimization = toggle_button.check_state
+
+    return sheets_to_keep, report_optimization
 
 
 class CheckBox(Checkbutton):
@@ -148,8 +186,7 @@ def checkbuttons_window(root: Tk) -> list[str]:
     # list containing labels for checkbuttons
     checkbutton_list = [
         "Common Errors", "Consistency Errors", "Spelling Errors",
-        "Grammar Errors", "User-Defined Errors"
-    ]
+        "Grammar Errors", "User-Defined Errors"]
 
     checkbox_popup = Toplevel(root)
     checkbox_popup.attributes("-topmost", "true")
@@ -180,7 +217,6 @@ def checkbuttons_window(root: Tk) -> list[str]:
 
         # makes button non-interactive until at least one option is selected
         if len(sheets_to_keep) > 0:
-            checkbox_popup.destroy()
             root.destroy()
 
     check_all_button = Button(checkbox_popup,
@@ -213,7 +249,8 @@ def browse_verifika(root: Tk, config_file: ConfigFile) -> str:
 
     close_verifika()
 
-    # tries to read location from config
+    # tries to read location from config, otherwise let user browse for the executable
+    # then updates config file to reflect this
     try:
         verifika_exe_location = config_file["DEFAULT"]["verifika_location"]
         if not isfile(verifika_exe_location):
@@ -275,8 +312,8 @@ def close_verifika():
             answer = askyesno(
                 title="Verifika is already running",
                 message=("Another instance of Verifika is already running.\n"
-                "Would you like to close it before continuing?\n"
-                "Warning: no changes will be saved."),
+                         "Would you like to close it before continuing?\n"
+                         "Warning: no changes will be saved."),
                 icon="question")
 
             # closes this program if user selects "no" (or closes the window)
@@ -305,7 +342,7 @@ def select_files(root: Tk) -> tuple[tuple[str], str]:
     if not files:
         sys.exit()
 
-    return [files, files_dir]
+    return files, files_dir
 
 
 def manage_files(files: tuple[str]) -> str:
@@ -319,7 +356,7 @@ def manage_files(files: tuple[str]) -> str:
 
     # gets the directory where files are located
     files_dir = split(files[0])[0]
-    temp_dir = files_dir + r"/temp_dir"
+    temp_dir = f"{files_dir}/temp_dir"
 
     if len(files) > 1:
         # removes sub-dir if it already exists
@@ -328,12 +365,15 @@ def manage_files(files: tuple[str]) -> str:
 
         # creates sub-dir and copies files to it
         mkdir(temp_dir)
+        source_dir = files_dir + "\\"
+        dst_sir = temp_dir + "\\"
+
         for file in files:
             # gets the name of the file
             file_name = split(file)[1]
-            source_location = files_dir + "/" + file_name
-            dst_location = temp_dir + "/" + file_name
-            copy(source_location, dst_location)
+            file_source_location = source_dir + file_name
+            file_dst_location = dst_sir + file_name
+            copy(file_source_location, file_dst_location)
 
         files_to_check = temp_dir
 
@@ -345,13 +385,14 @@ def manage_files(files: tuple[str]) -> str:
 
 
 def run_qa(files_dir: str, verifika_exe_location: str, files_to_check: str,
-           verifika_profile: str, sheets_to_keep: list[str]) -> str:
+           verifika_profile: str, sheets_to_keep: list[str], report_optimization:bool):
     """Preforms Verifika QA via CMD.\n
     Returns QA report's name, if one was saved."""
 
     temp_report_name = f"{files_dir}/temp_report.xlsx"
 
-    # more optimized report for individual Common, Consistency, and Spelling errors.
+
+    # more optimized reports for individual Common, Consistency, and Spelling errors.
     condition = ["Common Errors", "Consistency Errors", "Spelling Errors"]
     if len(sheets_to_keep) == 1 and any(sheet in sheets_to_keep
                                         for sheet in condition):
@@ -359,14 +400,18 @@ def run_qa(files_dir: str, verifika_exe_location: str, files_to_check: str,
         choice = sheets_to_keep[0]
         report_type = choice.split(" ")[0]
         cmd_command = (
-            f'"{verifika_exe_location}" -files "{files_to_check}" -profile "{verifika_profile}" '
-            f'-startcheck -type {report_type} -result "{temp_report_name}"')
+            f'"{verifika_exe_location}" -files "{files_to_check}" -profile "{verifika_profile}"'
+            f' -startcheck -type {report_type}')
 
     # otherwise uses general Full report mode
     else:
         cmd_command = (
-            f'"{verifika_exe_location}" -files "{files_to_check}" -profile "{verifika_profile}" '
-            f'-startcheck -type Full -result "{temp_report_name}"')
+            f'"{verifika_exe_location}" -files "{files_to_check}" -profile "{verifika_profile}"'
+            f' -startcheck -type Full')
+
+    # automatic optimization additionally requires path in order to store the report once created
+    if report_optimization:
+        cmd_command += f' -result {temp_report_name}'
 
     # runs QA via CMD with accompanying progress bar
     # DEVNULL used to suppress the long output from Verifika, error output left enabled
@@ -382,19 +427,20 @@ def run_qa(files_dir: str, verifika_exe_location: str, files_to_check: str,
             progress_bar()  # pylint: disable=not-callable
 
     # deletes temp-dir as it is no longer necessary
-    temp_dir = files_dir + "/temp_dir"
+    temp_dir = f"{files_dir}/temp_dir"
     if isdir(temp_dir):
         rmtree(temp_dir)
 
     if not isfile(temp_report_name):
-        showinfo(title="No report saved", message="No errors were found.")
-        sys.exit()
+        if report_optimization:
+            showinfo(title="No report saved", message="No errors were found.")
+            sys.exit()
     else:
         process_and_save_report(temp_report_name, sheets_to_keep)
 
 
 def process_and_save_report(temp_report_name: str, sheets_to_keep: list[str]):
-    """Note: Sometimes Excel reports issues when opening these files however,
+    """Note: Sometimes Excel reports issues when opening these files, however,
     they can be fixed."""
 
     files_dir = split(temp_report_name)[0]
@@ -406,7 +452,7 @@ def process_and_save_report(temp_report_name: str, sheets_to_keep: list[str]):
         # removes sheets that are just Verifika sheet headers
         if sheet.max_row < 12:
             wb_verifika.remove(sheet)
-        # for 'Full' reports only sheets without any errors will be removes
+        # further optimization for non-Full reports
         elif "Full" not in sheets_to_keep and sheet_name not in sheets_to_keep:
             wb_verifika.remove(sheet)
 
@@ -431,7 +477,7 @@ def process_and_save_report(temp_report_name: str, sheets_to_keep: list[str]):
                     title="Error occurred!",
                     message=(
                         "File could not be saved because it is already opened "
-                        "by another process (likely Excel.exe). "
+                        "by another process (most likely Excel or another reader). "
                         "Please close it before continuing."))
 
         wb_verifika.save(new_report_name)
@@ -440,15 +486,15 @@ def process_and_save_report(temp_report_name: str, sheets_to_keep: list[str]):
         system(f'"{new_report_name}"')
 
 
-def verifika_qa():
+def main():
     """Allows user to create Verifika reports without the need for its UI.
     Note: this is for UNOPTIMIZED reports only,
     meaning that you will not be able to exclude any errors from within Verifika
     (without editing the excel file yourself)."""
 
-    root = create_program_mainloop(transparent_icon_location="icon.ico")
+    root = create_program_mainloop()
 
-    config_file = create_config(config_location="config.ini")
+    config_file = create_config()
 
     verifika_exe_location = browse_verifika(root, config_file)
 
@@ -456,13 +502,13 @@ def verifika_qa():
 
     verifika_profile = browse_verifika_profile(root, config_file)
 
-    sheets_to_keep = select_report_type(root)
+    sheets_to_keep, report_optimization = select_report_type(root)
 
     files_to_check = manage_files(files)
 
     run_qa(files_dir, verifika_exe_location, files_to_check, verifika_profile,
-           sheets_to_keep)
+           sheets_to_keep, report_optimization)
 
 
 if __name__ == "__main__":
-    verifika_qa()
+    main()
