@@ -131,7 +131,6 @@ def select_report_type(root: Tk) -> tuple[list[str], bool]:
 
     # iterating over labels and adding buttons to the window
     row_number = 2
-    row_number = 2
     for (text, value) in radiobutton_dictionary.items():
         radiobutton = Radiobutton(radiobutton_popup,
                                   text=text,
@@ -508,13 +507,12 @@ def main():
 
     verifika_profile = browse_verifika_profile(root, config_file)
 
-    sheets_to_keep, report_optimization, report_optimization = select_report_type(
-        root)
+    sheets_to_keep, report_optimization = select_report_type(root)
 
     files_to_check = manage_files(files)
 
     run_qa(files_dir, verifika_exe_location, files_to_check, verifika_profile,
-           sheets_to_keep, report_optimization, report_optimization)
+           sheets_to_keep, report_optimization)
 
 
 if __name__ == "__main__":
