@@ -131,6 +131,7 @@ def select_report_type(root: Tk) -> tuple[list[str], bool]:
 
     # iterating over labels and adding buttons to the window
     row_number = 2
+    row_number = 2
     for (text, value) in radiobutton_dictionary.items():
         radiobutton = Radiobutton(radiobutton_popup,
                                   text=text,
@@ -149,6 +150,7 @@ def select_report_type(root: Tk) -> tuple[list[str], bool]:
     if choice == "Custom":
         sheets_to_keep = checkbuttons_window(root)
 
+    #custom spellcheck QA check
     #custom spellcheck QA check
     elif choice == "Spelling + Grammar":
         sheets_to_keep.extend(
@@ -372,6 +374,9 @@ def manage_files(files: tuple[str]) -> str:
         source_dir = files_dir + "\\"
         dst_sir = temp_dir + "\\"
 
+        source_dir = files_dir + "\\"
+        dst_sir = temp_dir + "\\"
+
         for file in files:
             # gets the name of the file
             file_name = split(file)[1]
@@ -444,7 +449,7 @@ def run_qa(files_dir: str, verifika_exe_location: str, files_to_check: str,
 
 
 def process_and_save_report(temp_report_name: str, sheets_to_keep: list[str]):
-    """Note: Sometimes Excel reports issues when opening these files, however,
+    """Note: Sometimes Excel reports issues when opening these files,, however,
     they can be fixed."""
 
     files_dir = split(temp_report_name)[0]
@@ -503,12 +508,13 @@ def main():
 
     verifika_profile = browse_verifika_profile(root, config_file)
 
-    sheets_to_keep, report_optimization = select_report_type(root)
+    sheets_to_keep, report_optimization, report_optimization = select_report_type(
+        root)
 
     files_to_check = manage_files(files)
 
     run_qa(files_dir, verifika_exe_location, files_to_check, verifika_profile,
-           sheets_to_keep, report_optimization)
+           sheets_to_keep, report_optimization, report_optimization)
 
 
 if __name__ == "__main__":
