@@ -162,7 +162,7 @@ def select_report_type(root: Tk) -> tuple[list[str], bool]:
     if radiobutton_popup.state() == 'normal':
         radiobutton_popup.destroy()
 
-    report_optimization = toggle_button.check_state
+    report_optimization = toggle_button.check_state()
 
     return sheets_to_keep, report_optimization
 
@@ -333,7 +333,7 @@ def close_verifika():
                 pass
 
 
-def select_files(root: Tk) -> tuple[tuple[str], str]:
+def select_files(root: Tk) -> tuple[tuple[str, ...], str]:
     """Prompts user to select files for checking.
     Returns the list of files and their directory."""
 
