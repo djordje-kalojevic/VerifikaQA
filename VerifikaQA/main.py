@@ -76,27 +76,27 @@ class ToggleButton(Button):
     def __init__(self, master):
         self.on_image = PhotoImage(file="images/enabled.png")
         self.off_image = PhotoImage(file="images/disabled.png")
-        self.report_optimization = False
+        self.manual_optimization = False
 
         Button.__init__(self, master, image=self.off_image, bd=0)
         self.master = master
         self['command'] = self.toggle
 
     def toggle(self):
-        """Allows the button to be toggled on and off"""
+        """Allows the button to be toggled on and off."""
 
-        if not self.report_optimization:
+        if not self.manual_optimization:
             self.config(image=self.on_image)
-            self.report_optimization = True
+            self.manual_optimization = True
 
         else:
             self.config(image=self.off_image)
-            self.report_optimization = False
+            self.manual_optimization = False
 
     def check_state(self) -> bool:
         """Returns the state of the toggle button, i.e., enabled or disabled."""
 
-        return self.report_optimization
+        return self.manual_optimization
 
 
 def select_report_type(root: Tk) -> tuple[list[str], bool]:
@@ -113,7 +113,7 @@ def select_report_type(root: Tk) -> tuple[list[str], bool]:
                   text="\nPlease choose desired report type:\n")
     label.grid(columnspan=3, column=0, row=0, ipadx=20)
 
-    toggle_button_label = Label(radiobutton_popup, text='Optimized report')
+    toggle_button_label = Label(radiobutton_popup, text='Manual Optimization')
     toggle_button_label.grid(columnspan=2, column=0, row=1, ipady=10, ipadx=20)
 
     toggle_button = ToggleButton(radiobutton_popup)
@@ -162,16 +162,16 @@ def select_report_type(root: Tk) -> tuple[list[str], bool]:
     if radiobutton_popup.state() == 'normal':
         radiobutton_popup.destroy()
 
-    report_optimization = toggle_button.check_state()
+    manual_optimization = toggle_button.check_state()
 
-    return sheets_to_keep, report_optimization
+    return sheets_to_keep, manual_optimization
 
 
 class CheckBox(Checkbutton):
     """Custom tk.Checkbutton class that stores labels of checked buttons"""
 
     # Storage for all buttons
-    boxes = []
+    boxes: list[Checkbutton]
 
     def __init__(self, master=None, **options):
         Checkbutton.__init__(self, master, options)
@@ -201,8 +201,8 @@ def checkbuttons_window(root: Tk) -> list[str]:
     label.pack()
 
     # iterates over values and adds buttons to the window
-    for label in checkbutton_list:
-        button = CheckBox(checkbox_popup, text=label)
+    for button_label in checkbutton_list:
+        button = CheckBox(checkbox_popup, text=button_label)
         button.pack(pady=3)
 
     def check_all():
@@ -394,7 +394,7 @@ def manage_files(files: tuple[str]) -> str:
 
 def run_qa(files_dir: str, verifika_exe_location: str, files_to_check: str,
            verifika_profile: str, sheets_to_keep: list[str],
-           report_optimization: bool):
+           manual_optimization: bool):
     """Preforms Verifika QA via CMD.\n
     Returns QA report's name, if one was saved."""
 
@@ -418,7 +418,7 @@ def run_qa(files_dir: str, verifika_exe_location: str, files_to_check: str,
             f' -startcheck -type Full')
 
     # automatic optimization additionally requires path in order to store the report once created
-    if report_optimization:
+    if not manual_optimization:
         cmd_command += f' -result {temp_report_name}'
 
     # runs QA via CMD with accompanying progress bar
@@ -440,7 +440,7 @@ def run_qa(files_dir: str, verifika_exe_location: str, files_to_check: str,
         rmtree(temp_dir)
 
     if not isfile(temp_report_name):
-        if report_optimization:
+        if not manual_optimization:
             showinfo(title="No report saved", message="No errors were found.")
             sys.exit()
     else:
@@ -507,12 +507,12 @@ def main():
 
     verifika_profile = browse_verifika_profile(root, config_file)
 
-    sheets_to_keep, report_optimization = select_report_type(root)
+    sheets_to_keep, manual_optimization = select_report_type(root)
 
     files_to_check = manage_files(files)
 
     run_qa(files_dir, verifika_exe_location, files_to_check, verifika_profile,
-           sheets_to_keep, report_optimization)
+           sheets_to_keep, manual_optimization)
 
 
 if __name__ == "__main__":
