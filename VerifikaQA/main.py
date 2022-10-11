@@ -5,7 +5,7 @@ In turn, this speeds up the process."""
 from os import mkdir, remove, system
 from os.path import isfile, isdir, split
 from shutil import rmtree, copy
-from tkinter import PhotoImage, Tk, Toplevel, Button, Checkbutton, StringVar, BooleanVar, Label
+from tkinter import PhotoImage, TclError, Tk, Toplevel, Button, Checkbutton, StringVar, BooleanVar, Label
 from tkinter.messagebox import showinfo, showerror, askyesno
 from tkinter.filedialog import askopenfilename, askopenfilenames, asksaveasfilename
 from tkinter.ttk import Radiobutton
@@ -158,11 +158,13 @@ def select_report_type(root: Tk) -> tuple[list[str], bool]:
     else:
         sheets_to_keep.append(choice)
 
-    #closes the window if it remained open
-    if radiobutton_popup.state() == 'normal':
-        radiobutton_popup.destroy()
-
     manual_optimization = toggle_button.check_state()
+
+    #closes the window if it remained open
+    try:
+        radiobutton_popup.destroy()
+    except TclError:
+        pass
 
     return sheets_to_keep, manual_optimization
 
@@ -171,7 +173,7 @@ class CheckBox(Checkbutton):
     """Custom tk.Checkbutton class that stores labels of checked buttons"""
 
     # Storage for all buttons
-    boxes: list[Checkbutton]
+    boxes: list[Checkbutton] = []
 
     def __init__(self, master=None, **options):
         Checkbutton.__init__(self, master, options)
@@ -370,9 +372,6 @@ def manage_files(files: tuple[str]) -> str:
 
         # creates sub-dir and copies files to it
         mkdir(temp_dir)
-        source_dir = files_dir + "\\"
-        dst_sir = temp_dir + "\\"
-
         source_dir = files_dir + "\\"
         dst_sir = temp_dir + "\\"
 
